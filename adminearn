@@ -1,0 +1,1791 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Admin Panel - Earn Wallet</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
+
+  <style>
+    :root { --primary: #6C5CE7; --primary-light: #A29BFE; --bg: #f4f6fb; --surface: #FFF; --text: #2D3436; --green: #00b894; --red: #ff4757; --blue: #0984e3; --orange: #ff9f43; }
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+    body { background: var(--bg); color: var(--text); padding-bottom: 30px; -webkit-tap-highlight-color: transparent;}
+    
+    .login-overlay{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#4b3ee0,#6C5CE7);padding:20px;}
+    .login-card{background:#fff;padding:30px 25px;border-radius:25px;width:100%;max-width:380px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.4);}
+    .login-card i.lock{font-size:3rem;color:var(--primary);margin-bottom:15px;}
+    .login-card h2{font-size:1.3rem;margin-bottom:6px;}
+    .login-card p{font-size:0.85rem;color:#777;margin-bottom:22px;}
+    .login-card input{width:100%;padding:15px;border:2px solid #e1e1e1;border-radius:12px;font-size:1rem;text-align:center;font-weight:700;letter-spacing:3px;outline:none;}
+    .login-card input:focus{border-color:var(--primary);box-shadow:0 0 0 4px rgba(108,92,231,.15);}
+    .login-card button{width:100%;margin-top:15px;padding:15px;background:linear-gradient(135deg,var(--primary),var(--primary-light));color:#fff;border:none;border-radius:12px;font-weight:800;font-size:1rem;cursor:pointer;}
+    .login-error{color:var(--red);font-size:.85rem;margin-top:10px;font-weight:700;display:none;}
+    
+    .header { background: linear-gradient(135deg, #4b3ee0, var(--primary)); color: #fff; padding: 20px; display:flex; justify-content:space-between; align-items:center; font-size: 1.15rem; font-weight: 800; position: sticky; top:0; z-index:10; box-shadow: 0 4px 15px rgba(108,92,231,0.3); border-radius: 0 0 25px 25px; margin-bottom: 20px;}
+    .header .logout{background:rgba(255,255,255,.2);border:none;color:#fff;padding:8px 14px;border-radius:10px;font-size:.8rem;font-weight:700;cursor:pointer;}
+    
+    .container { max-width: 700px; margin: 0 auto; padding: 0 15px; }
+    
+    .stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;}
+    .stat-card{background:#fff;padding:15px;border-radius:15px;text-align:center;box-shadow:0 4px 12px rgba(0,0,0,.04);}
+    .stat-card i{font-size:1.4rem;color:var(--primary);margin-bottom:6px;}
+    .stat-card .val{font-size:1.3rem;font-weight:900;}
+    .stat-card .lbl{font-size:.7rem;color:#888;font-weight:700;text-transform:uppercase;}
+    
+    .tabs { display: flex; overflow-x: auto; background: var(--surface); border-radius: 15px; padding: 5px; gap: 5px; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.03); scrollbar-width:none; }
+    .tabs::-webkit-scrollbar{display:none;}
+    .tab { flex: 0 0 auto; padding: 12px 14px; font-weight: 700; color: #888; cursor: pointer; border-radius: 10px; white-space: nowrap; font-size: 0.82rem;}
+    .tab.active { background: rgba(108,92,231,0.1); color: var(--primary); }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    .card { background: var(--surface); padding: 20px; border-radius: 20px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); }
+    h3 { font-size: 1.05rem; margin-bottom: 15px; border-bottom: 2px dashed #eee; padding-bottom: 10px; color: var(--primary); display: flex; align-items: center; gap: 10px; }
+    h3 small{margin-left:auto;font-size:.7rem;color:#888;font-weight:600;}
+    
+    .form-group { margin-bottom: 15px; }
+    label { display: block; font-size: 0.8rem; font-weight: 700; margin-bottom: 6px; color: #444; }
+    input, select, textarea { width: 100%; padding: 13px; border: 1px solid #ddd; border-radius: 12px; font-size: 0.9rem; outline: none; background: #fafafa; font-weight: 600; font-family:inherit;}
+    input:focus, textarea:focus, select:focus { border-color: var(--primary); background: #fff; box-shadow: 0 0 0 3px rgba(108,92,231,0.1);}
+    
+    .row-2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+    
+    .btn { width: 100%; background: linear-gradient(135deg, var(--primary), var(--primary-light)); color: #fff; border: none; padding: 14px; border-radius: 12px; font-weight: 800; font-size: 0.95rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; margin-top:10px; font-family:inherit;}
+    .btn-green { background: linear-gradient(135deg, #00b894, #00cec9); }
+    .btn-red { background: linear-gradient(135deg, #ff4757, #ff6b81); }
+    .btn-blue { background: linear-gradient(135deg, #0984e3, #74b9ff); }
+    .btn-orange { background: linear-gradient(135deg, #ff9f43, #ffb142); }
+    .btn-small { width: auto; padding: 8px 12px; font-size: 0.75rem; border-radius: 8px; margin-top:0;}
+    
+    .ad-slot-card{background:linear-gradient(145deg,#fafbff,#f0f2ff);padding:15px;border-radius:15px;border:2px solid #e8eaff;margin-bottom:14px;position:relative;}
+    .ad-slot-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+    .ad-slot-head b{font-size:1rem;color:var(--primary);}
+    .ad-slot-head .badge{padding:4px 10px;border-radius:20px;font-size:.7rem;font-weight:800;}
+    .badge-active{background:rgba(0,184,148,.15);color:var(--green);}
+    .badge-off{background:rgba(255,71,87,.15);color:var(--red);}
+    .remove-slot-btn{position:absolute;top:10px;right:10px;background:rgba(255,71,87,.1);border:none;color:var(--red);width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:.8rem;display:flex;align-items:center;justify-content:center;}
+    
+    .slide-card{background:linear-gradient(145deg,#fafbff,#f0f2ff);padding:15px;border-radius:15px;border:2px solid #e8eaff;margin-bottom:14px;position:relative;}
+    
+    .wd-card { border: 1px solid #eee; padding: 15px; border-radius: 15px; margin-bottom: 15px; background: #fff; }
+    .wd-head { display: flex; justify-content: space-between; font-weight: 800; margin-bottom: 12px; border-bottom: 1px dashed #ddd; padding-bottom: 12px; align-items:center;}
+    .wd-info { font-size: 0.85rem; color: #555; margin-bottom: 15px; line-height: 1.6; }
+    .wd-actions { display: flex; gap: 10px; }
+    
+    .user-row{display:flex;align-items:center;justify-content:space-between;padding:10px;border-bottom:1px solid #f0f0f0;}
+    .user-row:last-child{border:none;}
+    .user-info{display:flex;align-items:center;gap:10px;}
+    .user-info img{width:38px;height:38px;border-radius:50%;}
+    .user-info .name{font-weight:800;font-size:.9rem;display:flex;align-items:center;gap:5px;}
+    .user-info .id{font-size:.7rem;color:#888;}
+    .user-bal{font-weight:900;color:var(--primary);font-size:.95rem;}
+    
+    .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #2d3436; color: #fff; padding: 12px 25px; border-radius: 30px; font-size: 0.9rem; opacity: 0; pointer-events: none; transition: 0.3s; z-index: 10000; font-weight: 600; max-width:90%; text-align:center;}
+    .toast.show { opacity: 1; top: 30px; }
+    
+    .empty{text-align:center;padding:30px 10px;color:#888;}
+    .empty i{font-size:2.5rem;color:#ccc;margin-bottom:10px;display:block;}
+    .info-box{background:#fff7e6;border-left:4px solid #ff9f43;padding:12px 15px;border-radius:10px;margin-bottom:15px;font-size:.8rem;color:#d35400;font-weight:600;line-height:1.6;}
+    .info-box i{margin-right:6px;}
+    .success-box{background:#e8f8f5;border-left:4px solid #00b894;padding:12px 15px;border-radius:10px;margin-bottom:15px;font-size:.8rem;color:#008b74;font-weight:600;line-height:1.6;}
+    .search-user{display:flex;align-items:center;justify-content:space-between;padding:10px;background:#fff;border-radius:10px;margin-bottom:8px;cursor:pointer;border:1px solid #eee;}
+    .filter-btns{display:flex;gap:6px;flex-wrap:wrap;}
+    .filter-btn{padding:8px 14px;border:none;border-radius:8px;font-weight:700;font-size:.75rem;cursor:pointer;font-family:inherit;}
+    .filter-btn.active{transform:scale(1.05);box-shadow:0 4px 12px rgba(0,0,0,.15);}
+    .filter-btn:not(.active){opacity:.55;}
+  </style>
+</head>
+<body>
+
+  <div id="loginScreen" class="login-overlay">
+    <div class="login-card">
+      <i class="fas fa-shield-halved lock"></i>
+      <h2>Admin Access</h2>
+      <p>Enter admin password to continue</p>
+      <input type="password" id="loginPass" placeholder="••••••" maxlength="30">
+      <div class="login-error" id="loginErr">❌ Wrong password</div>
+      <button onclick="doLogin()"><i class="fas fa-lock-open"></i> Unlock Panel</button>
+    </div>
+  </div>
+
+  <div id="mainApp" style="display:none;">
+    <div class="header">
+      <div><i class="fas fa-user-shield"></i> Admin Panel</div>
+      <button class="logout" onclick="doLogout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+    </div>
+
+    <div class="container">
+      
+      <div class="stats-grid">
+        <div class="stat-card"><i class="fas fa-users"></i><div class="val" id="statUsers">0</div><div class="lbl">Users</div></div>
+        <div class="stat-card"><i class="fas fa-user-check" style="color:#00b894;"></i><div class="val" id="statVerified">0</div><div class="lbl">Verified</div></div>
+        <div class="stat-card"><i class="fas fa-hourglass-half" style="color:#ff9f43;"></i><div class="val" id="statPendingV">0</div><div class="lbl">Pending V</div></div>
+        <div class="stat-card"><i class="fas fa-hourglass-half" style="color:#0984e3;"></i><div class="val" id="statPending">0</div><div class="lbl">Pending WD</div></div>
+      </div>
+
+      <div class="stats-grid" id="extendedStats"></div>
+
+      <div class="tabs">
+        <div class="tab active" onclick="switchTab('settings', this)"><i class="fas fa-cog"></i> General</div>
+        <div class="tab" onclick="switchTab('slides', this)"><i class="fas fa-images"></i> Slides</div>
+        <div class="tab" onclick="switchTab('verification', this)"><i class="fas fa-shield-alt"></i> Verify</div>
+        <div class="tab" onclick="switchTab('ads', this)"><i class="fas fa-ad"></i> Ads</div>
+        <div class="tab" onclick="switchTab('quiz', this)"><i class="fas fa-question-circle"></i> Quiz</div>
+        <div class="tab" onclick="switchTab('tasks', this)"><i class="fas fa-tasks"></i> Tasks</div>
+        <div class="tab" onclick="switchTab('promotion', this)"><i class="fas fa-bullhorn"></i> Promotion</div>
+        <div class="tab" onclick="switchTab('withdrawals', this)"><i class="fas fa-wallet"></i> Payouts</div>
+        <div class="tab" onclick="switchTab('manual', this)"><i class="fas fa-hand-holding-usd"></i> Admin WD</div>
+        <div class="tab" onclick="switchTab('users', this)"><i class="fas fa-users-cog"></i> Users</div>
+      </div>
+
+      <!-- SETTINGS TAB -->
+      <div id="tab-settings" class="tab-content active">
+        <div class="card">
+          <h3><i class="fas fa-robot"></i> App Info</h3>
+          <div class="form-group"><label>Bot Username (without @)</label><input type="text" id="botUsername" placeholder="your_bot"></div>
+          <div class="row-2">
+            <div class="form-group"><label>Currency Symbol</label><input type="text" id="currencySymbol" placeholder="TK"></div>
+            <div class="form-group"><label>Support Link</label><input type="text" id="supportLink" placeholder="https://t.me/..."></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3><i class="fas fa-video"></i> Tutorial Videos (Optional)</h3>
+          <div class="info-box"><i class="fas fa-info-circle"></i> এক বা একাধিক Link দিন।</div>
+          <div class="form-group"><label><i class="fab fa-youtube" style="color:#ff0000;"></i> YouTube URL</label><input type="text" id="tutorialLink" placeholder="https://youtube.com/watch?v=..."></div>
+          <div class="form-group"><label><i class="fab fa-facebook" style="color:#1877f2;"></i> Facebook URL</label><input type="text" id="tutorialLinkFb" placeholder="https://facebook.com/watch/..."></div>
+          <div class="form-group"><label><i class="fab fa-tiktok"></i> TikTok URL</label><input type="text" id="tutorialLinkTikTok" placeholder="https://tiktok.com/@user/video/..."></div>
+        </div>
+
+        <div class="card">
+          <h3><i class="fas fa-gift"></i> Bonus System</h3>
+          <div class="row-2">
+            <div class="form-group"><label>Daily Bonus</label><input type="number" step="0.01" id="dailyBonusAmount" placeholder="20"></div>
+            <div class="form-group"><label>Referral Bonus</label><input type="number" step="0.01" id="refBonus" placeholder="5"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3><i class="fas fa-money-bill-wave"></i> Withdrawal Rules</h3>
+          <div class="info-box"><i class="fas fa-info-circle"></i> Referral System: One-Time।</div>
+          <div class="form-group"><label>Minimum Withdraw Amount</label><input type="number" step="0.01" id="minWithdraw" placeholder="200"></div>
+          <div class="row-2">
+            <div class="form-group"><label>First Step Referral</label><input type="number" id="firstReferralReq" placeholder="20" oninput="updateTotalRefDisplay()"></div>
+            <div class="form-group"><label>Second Step Referral</label><input type="number" id="secondReferralReq" placeholder="10" oninput="updateTotalRefDisplay()"></div>
+          </div>
+          <div style="background:linear-gradient(135deg,#e8f5ff,#d4ebff);padding:14px;border-radius:12px;margin-bottom:15px;text-align:center;">
+            <div style="font-size:.75rem;color:#666;font-weight:700;">Total Referral Required</div>
+            <div style="font-size:1.8rem;font-weight:900;color:#0984e3;" id="totalRefDisplay">30</div>
+          </div>
+          <div class="form-group"><label>Withdraw Notice</label><textarea id="withdrawNotice" rows="2"></textarea></div>
+          <div class="form-group"><label>Payment Methods (comma separated)</label><input type="text" id="paymentMethods" placeholder="Bkash, Nagad"></div>
+        </div>
+
+        <button class="btn btn-green" onclick="saveSettings()"><i class="fas fa-save"></i> Save General Settings</button>
+      </div>
+
+      <!-- SLIDES TAB -->
+      <div id="tab-slides" class="tab-content">
+        <div class="card">
+          <h3><i class="fas fa-images"></i> Slide Banners <small id="slideCount">0 slides</small></h3>
+          <div class="info-box"><i class="fas fa-info-circle"></i> Slide যোগ/এডিট/ডিলিট করলে User Panel এ Auto Update হবে।</div>
+          <div id="slidesContainer"></div>
+          <button class="btn btn-blue" onclick="addNewSlide()"><i class="fas fa-plus"></i> Add New Slide</button>
+          <button class="btn btn-red" onclick="resetToDefault()"><i class="fas fa-undo"></i> Reset to Default</button>
+        </div>
+
+        <div class="card">
+          <h3><i class="fas fa-eye"></i> Live Preview</h3>
+          <div id="slidePreview" style="border-radius:20px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.12);"></div>
+        </div>
+      </div>
+
+      <!-- VERIFICATION TAB -->
+      <div id="tab-verification" class="tab-content">
+        <div class="card">
+          <h3><i class="fas fa-toggle-on"></i> Verification System</h3>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid #f0f0f0;">
+            <div style="flex:1;"><b style="font-size:.95rem;">Verification Required</b><br><small style="font-size:.72rem;color:#888;">ON করলে user কে verify করতে হবে</small></div>
+            <label style="position:relative;display:inline-block;width:60px;height:32px;">
+              <input type="checkbox" id="verificationEnabled" style="opacity:0;width:0;height:0;">
+              <span style="position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:#ccc;transition:.3s;border-radius:32px;" id="verifySlider"></span>
+            </label>
+          </div>
+          <div class="form-group" style="margin-top:15px;"><label>Verification Fee</label><input type="number" step="0.01" id="verificationFee" placeholder="50"></div>
+          <div class="form-group"><label>Instructions</label><textarea id="verificationNote" rows="3"></textarea></div>
+        </div>
+
+        <div class="card">
+          <h3><i class="fas fa-phone"></i> Payment Numbers</h3>
+          <div class="form-group"><label>bKash Number</label><input type="text" id="bkashNumber" placeholder="01XXXXXXXXX"></div>
+          <div class="form-group"><label>Nagad Number</label><input type="text" id="nagadNumber" placeholder="01XXXXXXXXX"></div>
+          <div class="form-group"><label>Rocket Number</label><input type="text" id="rocketNumber" placeholder="01XXXXXXXXX"></div>
+          <button class="btn btn-green" onclick="saveVerificationSettings()"><i class="fas fa-save"></i> Save</button>
+        </div>
+
+        <div class="card">
+          <h3><i class="fas fa-list"></i> Pending Verifications <small id="vCount">0</small></h3>
+          <div id="vContainer"></div>
+        </div>
+      </div>
+
+      <!-- ADS TAB -->
+      <div id="tab-ads" class="tab-content">
+        <div class="card">
+          <h3><i class="fas fa-sliders-h"></i> Global Ad Settings</h3>
+          <div class="row-2">
+            <div class="form-group"><label>Daily Limit</label><input type="number" id="dailyAdLimit" placeholder="10"></div>
+            <div class="form-group"><label>Reward</label><input type="number" step="0.01" id="adReward" placeholder="0.5"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3><i class="fas fa-bullhorn"></i> Ad Slots <small id="slotCount">0 slots</small></h3>
+          <div id="adsContainer"></div>
+          <button class="btn btn-blue" onclick="addNewSlot()"><i class="fas fa-plus"></i> Add New Slot</button>
+          <button class="btn btn-green" onclick="saveAds()"><i class="fas fa-save"></i> Save All</button>
+        </div>
+      </div>
+
+      <!-- QUIZ TAB -->
+      <div id="tab-quiz" class="tab-content">
+        <div class="card">
+          <h3><i class="fas fa-question-circle"></i> Quiz Settings</h3>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid #f0f0f0;">
+            <div style="flex:1;"><b style="font-size:.95rem;">Quiz Enabled</b></div>
+            <label style="position:relative;display:inline-block;width:60px;height:32px;">
+              <input type="checkbox" id="quizEnabled" style="opacity:0;width:0;height:0;">
+              <span style="position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:#ccc;transition:.3s;border-radius:32px;" id="quizSlider"></span>
+            </label>
+          </div>
+          <div class="row-2" style="margin-top:15px;">
+            <div class="form-group"><label>Reward per Quiz</label><input type="number" step="0.01" id="quizReward" placeholder="5"></div>
+            <div class="form-group"><label>Time (sec)</label><input type="number" id="quizTime" placeholder="30"></div>
+          </div>
+          <div class="form-group"><label>Daily Quiz Limit</label><input type="number" id="quizDailyLimit" placeholder="3"></div>
+          <button class="btn btn-green" onclick="saveQuizSettings()"><i class="fas fa-save"></i> Save</button>
+        </div>
+
+        <div class="card">
+          <h3><i class="fas fa-plus-circle"></i> Add New Quiz</h3>
+          <div class="form-group"><label>Question</label><textarea id="quizQuestion" rows="2"></textarea></div>
+          <div class="row-2">
+            <div class="form-group"><label>A</label><input type="text" id="quizOptA"></div>
+            <div class="form-group"><label>B</label><input type="text" id="quizOptB"></div>
+          </div>
+          <div class="row-2">
+            <div class="form-group"><label>C</label><input type="text" id="quizOptC"></div>
+            <div class="form-group"><label>D</label><input type="text" id="quizOptD"></div>
+          </div>
+          <div class="row-2">
+            <div class="form-group"><label>Correct</label><select id="quizCorrect"><option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option></select></div>
+            <div class="form-group"><label>Category</label>
+              <select id="quizCategory">
+                <option value="GK">সাধারণ জ্ঞান</option><option value="Math">গণিত</option>
+                <option value="English">ইংরেজি</option><option value="Science">বিজ্ঞান</option>
+                <option value="History">ইতিহাস</option><option value="Sports">খেলাধুলা</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group"><label>Publish Date</label><input type="date" id="quizDate"></div>
+          <button class="btn btn-green" onclick="addQuiz()"><i class="fas fa-plus"></i> Add Quiz</button>
+        </div>
+
+        <div class="card">
+          <h3><i class="fas fa-list-check"></i> All Quizzes <small id="quizCount">0</small></h3>
+          <div id="quizList"></div>
+        </div>
+
+        <div class="card">
+          <h3><i class="fas fa-trophy"></i> Today's Winners <small id="winnerCount">0</small></h3>
+          <div id="quizWinners"></div>
+        </div>
+      </div>
+
+      <!-- TASKS TAB -->
+      <div id="tab-tasks" class="tab-content">
+        <div class="card">
+          <h3><i class="fas fa-plus-circle"></i> Add New Task</h3>
+          <div class="form-group"><label>Task Name</label><input type="text" id="taskName"></div>
+          <div class="row-2">
+            <div class="form-group"><label>Reward</label><input type="number" step="0.01" id="taskReward" placeholder="5"></div>
+            <div class="form-group"><label>Cooldown (sec)</label><input type="number" id="taskCooldown" placeholder="15"></div>
+          </div>
+          <div class="form-group"><label>URL</label><input type="text" id="taskUrl" placeholder="https://t.me/..."></div>
+          <div class="form-group"><label>Icon URL</label><input type="text" id="taskIcon" placeholder="https://.../icon.png"></div>
+          <button class="btn btn-green" onclick="addTask()"><i class="fas fa-plus"></i> Add Task</button>
+        </div>
+        <div class="card">
+          <h3><i class="fas fa-list-check"></i> Tasks <small id="taskCount">0</small></h3>
+          <div id="tasksList"></div>
+        </div>
+      </div>
+
+      <!-- PROMOTION TAB -->
+      <div id="tab-promotion" class="tab-content">
+        
+        <div class="card">
+          <h3><i class="fas fa-money-bill-wave"></i> Payment Info</h3>
+          <div class="info-box"><i class="fas fa-info-circle"></i> User এই নাম্বারে Payment করবে Promotion এর জন্য।</div>
+          <div class="row-2">
+            <div class="form-group"><label>bKash</label><input type="text" id="promoBkash" placeholder="01XXXXXXXXX"></div>
+            <div class="form-group"><label>Nagad</label><input type="text" id="promoNagad" placeholder="01XXXXXXXXX"></div>
+          </div>
+          <div class="form-group"><label>Instructions</label><textarea id="promoInstructions" rows="2" placeholder="টাকা পাঠানোর পর Trx ID দিন"></textarea></div>
+          <button class="btn btn-green" onclick="savePromoPayment()"><i class="fas fa-save"></i> Save Payment Info</button>
+        </div>
+
+        <div class="card">
+          <h3><i class="fas fa-tags"></i> Service Pricing (Base Setup)</h3>
+          <div class="info-box">
+            <i class="fas fa-info-circle"></i> <b>নিয়ম:</b> Base Amount + Base Quantity সেট করুন। যেমন: <b>50 টাকা = 100 Likes</b>। User যদি 600 Likes চায়, Auto Calculate হবে <b>300 টাকা</b>।
+          </div>
+          <div id="promoPricesContainer"></div>
+          <button class="btn btn-green" onclick="savePromoPrices()"><i class="fas fa-save"></i> Save All Prices</button>
+        </div>
+
+        <div class="card">
+          <h3><i class="fas fa-filter"></i> Filter Requests</h3>
+          <div class="filter-btns">
+            <button class="filter-btn active" onclick="filterPromo('pending')" style="background:#ff9f43;color:#fff;" id="promoF_pending">⏳ Pending</button>
+            <button class="filter-btn" onclick="filterPromo('in_progress')" style="background:#0984e3;color:#fff;" id="promoF_in_progress">🔄 Progress</button>
+            <button class="filter-btn" onclick="filterPromo('completed')" style="background:#00b894;color:#fff;" id="promoF_completed">✅ Done</button>
+            <button class="filter-btn" onclick="filterPromo('rejected')" style="background:#ff4757;color:#fff;" id="promoF_rejected">❌ Rejected</button>
+            <button class="filter-btn" onclick="filterPromo('all')" style="background:#6C5CE7;color:#fff;" id="promoF_all">📋 All</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3><i class="fas fa-bullhorn"></i> Promotion Requests <small id="promoCount">0</small></h3>
+          <div id="promoContainer"></div>
+        </div>
+
+      </div>
+
+      <!-- WITHDRAWALS TAB -->
+      <div id="tab-withdrawals" class="tab-content">
+        <div class="card">
+          <h3><i class="fas fa-filter"></i> Filter</h3>
+          <div class="filter-btns">
+            <button class="filter-btn active" onclick="filterWd('pending')" style="background:#ff9f43;color:#fff;" id="wdF_pending">⏳ Pending</button>
+            <button class="filter-btn" onclick="filterWd('approved')" style="background:#00b894;color:#fff;" id="wdF_approved">✅ Approved</button>
+            <button class="filter-btn" onclick="filterWd('rejected')" style="background:#ff4757;color:#fff;" id="wdF_rejected">❌ Rejected</button>
+            <button class="filter-btn" onclick="filterWd('all')" style="background:#6C5CE7;color:#fff;" id="wdF_all">📋 All</button>
+          </div>
+          <div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            <div style="background:#fff7e6;padding:10px;border-radius:10px;text-align:center;">
+              <div style="font-size:1.2rem;font-weight:900;color:#ff9f43;" id="wdPendingAmt">0</div>
+              <div style="font-size:.7rem;color:#888;font-weight:700;">Pending</div>
+            </div>
+            <div style="background:#e8f8f5;padding:10px;border-radius:10px;text-align:center;">
+              <div style="font-size:1.2rem;font-weight:900;color:#00b894;" id="wdApprovedAmt">0</div>
+              <div style="font-size:.7rem;color:#888;font-weight:700;">Paid</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3><i class="fas fa-wallet"></i> Withdraw Requests <small id="wdCount2">0</small></h3>
+          <div id="wd-container"></div>
+        </div>
+      </div>
+
+      <!-- ADMIN WITHDRAW TAB -->
+      <div id="tab-manual" class="tab-content">
+        <div class="card">
+          <h3><i class="fas fa-hand-holding-usd"></i> Admin Withdraw</h3>
+          <div class="info-box"><i class="fas fa-info-circle"></i> যেকোনো User এর Account থেকে টাকা Withdraw করুন।</div>
+          <div class="form-group">
+            <label>🔍 Search User (Name or ID)</label>
+            <input type="text" id="manualUserSearch" placeholder="Rahim অথবা 8500263467" oninput="searchManualUser()">
+          </div>
+          <div id="manualUserResult"></div>
+        </div>
+
+        <div class="card">
+          <h3><i class="fas fa-history"></i> Recent <small id="manualCount">0</small></h3>
+          <div id="manualHistoryList"></div>
+        </div>
+      </div>
+
+      <!-- USERS TAB -->
+      <div id="tab-users" class="tab-content">
+        <div class="card">
+          <h3><i class="fas fa-filter"></i> User Filters</h3>
+          <div class="form-group"><input type="text" id="userSearch" placeholder="🔍 Search..." oninput="filterUsers()"></div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <button class="btn btn-blue btn-small" onclick="filterUserType('all')" id="fAll" style="opacity:1;">All</button>
+            <button class="btn btn-green btn-small" onclick="filterUserType('verified')" id="fVerified" style="opacity:.5;">✅ Verified</button>
+            <button class="btn btn-red btn-small" onclick="filterUserType('unverified')" id="fUnverified" style="opacity:.5;">❌ Unverified</button>
+            <button class="btn btn-orange btn-small" onclick="filterUserType('active')" id="fActive" style="opacity:.5;">🔥 Today</button>
+            <button class="btn btn-small" onclick="filterUserType('rich')" id="fRich" style="background:#6C5CE7;color:#fff;opacity:.5;">💰 Top</button>
+          </div>
+          <div style="margin-top:12px;padding:10px;background:#f9f9f9;border-radius:10px;font-size:.8rem;font-weight:700;display:flex;justify-content:space-between;">
+            <span>Showing: <b id="shownCount">0</b></span>
+            <span>Total: <b id="totalUsers2">0</b></span>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3><i class="fas fa-users"></i> All Users <small id="userCount">0</small></h3>
+          <div id="usersList" style="max-height:600px;overflow-y:auto;"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div id="toast" class="toast">Saved!</div>
+
+  <script>
+    const ADMIN_PASSWORD = "mdfahim78";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAFPsBcopNnWA3k_CXVpXX4uyMTxbKMDXs",
+      authDomain: "earning-bd-a31f8.firebaseapp.com",
+      databaseURL: "https://earning-bd-a31f8-default-rtdb.firebaseio.com",
+      projectId: "earning-bd-a31f8",
+      storageBucket: "earning-bd-a31f8.firebasestorage.app",
+      messagingSenderId: "715531245095",
+      appId: "1:715531245095:web:bf37dcd4459d9af3f7e002"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    let configData = { adSlots: [], webTasks:{}, slides:{} };
+    let allUsers = [];
+    let allWithdrawals = [];
+    let allPromotions = [];
+    let currentUserFilter = 'all';
+    let currentWdFilter = 'pending';
+    let currentPromoFilter = 'pending';
+    let manualSelectedUser = null;
+    let currentSlides = {};
+    let currentPromoPrices = {};
+
+    const DEFAULT_SLIDES = {
+      s1: { icon: '🎉', title: 'Daily Bonus পান', subtitle: 'প্রতিদিন ২০ টাকা পর্যন্ত', color: 'linear-gradient(135deg,#667eea,#764ba2)', enabled: true },
+      s2: { icon: '👥', title: 'বন্ধু ইনভাইট করুন', subtitle: 'প্রতি রেফারে ৫ টাকা পান', color: 'linear-gradient(135deg,#f093fb,#f5576c)', enabled: true },
+      s3: { icon: '🎯', title: 'Daily Quiz খেলুন', subtitle: 'সঠিক উত্তরে ৫ টাকা', color: 'linear-gradient(135deg,#4facfe,#00f2fe)', enabled: true },
+      s4: { icon: '💰', title: 'Ad দেখে আয় করুন', subtitle: 'প্রতিদিন ২০+ টাকা ইনকাম', color: 'linear-gradient(135deg,#43e97b,#38f9d7)', enabled: true },
+      s5: { icon: '⚡', title: 'দ্রুত Withdraw', subtitle: '২৪ ঘণ্টায় Payment', color: 'linear-gradient(135deg,#fa709a,#fee140)', enabled: true },
+      s6: { icon: '🛡️', title: 'Verified হোন', subtitle: 'Withdraw Unlock করুন', color: 'linear-gradient(135deg,#00b894,#00cec9)', enabled: true },
+      s7: { icon: '🏆', title: 'Top 10 এ উঠুন', subtitle: 'সেরা Earner হোন', color: 'linear-gradient(135deg,#f6d365,#fda085)', enabled: true },
+      s8: { icon: '💯', title: '১০০% Free', subtitle: 'কোনো Invest নেই', color: 'linear-gradient(135deg,#a1c4fd,#c2e9fb)', enabled: true },
+      s10: { icon: '📞', title: '২৪/৭ Support', subtitle: 'যেকোনো সাহায্যে', color: 'linear-gradient(135deg,#ff6a88,#ff99ac)', enabled: true }
+    };
+
+    const DEFAULT_PROMO_PRICES = {
+      tiktok: {
+        like:       { amount: 50,  quantity: 100 },
+        comment:    { amount: 75,  quantity: 100 },
+        follower:   { amount: 100, quantity: 100 },
+        share:      { amount: 40,  quantity: 100 },
+        view:       { amount: 25,  quantity: 1000 }
+      },
+      facebook: {
+        like:       { amount: 50,  quantity: 100 },
+        comment:    { amount: 75,  quantity: 100 },
+        follower:   { amount: 100, quantity: 100 },
+        share:      { amount: 40,  quantity: 100 },
+        view:       { amount: 25,  quantity: 1000 }
+      },
+      youtube: {
+        like:       { amount: 60,  quantity: 100 },
+        comment:    { amount: 90,  quantity: 100 },
+        subscriber: { amount: 150, quantity: 100 },
+        view:       { amount: 30,  quantity: 1000 }
+      },
+      telegram: {
+        subscriber: { amount: 100, quantity: 100 },
+        member:     { amount: 120, quantity: 100 }
+      }
+    };
+
+    const SERVICE_NAMES = {
+      'tiktok_like': '🎵 TikTok Likes', 'tiktok_comment': '💬 TikTok Comments',
+      'tiktok_follower': '👥 TikTok Followers', 'tiktok_share': '🔗 TikTok Shares',
+      'tiktok_view': '👁️ TikTok Views', 'facebook_like': '👍 Facebook Likes',
+      'facebook_comment': '💬 Facebook Comments', 'facebook_follower': '👥 Facebook Followers',
+      'facebook_share': '🔗 Facebook Shares', 'facebook_view': '👁️ Facebook Views',
+      'youtube_like': '👍 YouTube Likes', 'youtube_comment': '💬 YouTube Comments',
+      'youtube_subscriber': '🔔 YouTube Subscribers', 'youtube_view': '👁️ YouTube Views',
+      'telegram_subscriber': '📢 Telegram Subscribe', 'telegram_member': '👥 Telegram Group Join'
+    };
+
+    // ========== LOGIN ==========
+    function doLogin(){
+      const p = document.getElementById('loginPass').value;
+      if(p === ADMIN_PASSWORD){
+        sessionStorage.setItem('adminLoggedIn', '1');
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('mainApp').style.display = 'block';
+        initPanel();
+      } else {
+        document.getElementById('loginErr').style.display = 'block';
+        document.getElementById('loginPass').value = '';
+      }
+    }
+    function doLogout(){
+      if(confirm('Logout?')){ sessionStorage.removeItem('adminLoggedIn'); location.reload(); }
+    }
+    if(sessionStorage.getItem('adminLoggedIn') === '1'){
+      document.getElementById('loginScreen').style.display = 'none';
+      document.getElementById('mainApp').style.display = 'block';
+      window.addEventListener('load', initPanel);
+    }
+    document.addEventListener('DOMContentLoaded', () => {
+      const p = document.getElementById('loginPass');
+      if(p) p.addEventListener('keypress', (e) => { if(e.key === 'Enter') doLogin(); });
+    });
+
+    function initPanel(){
+      loadConfig();
+      loadWithdrawals();
+      loadUsers();
+      loadStats();
+      loadExtendedStats();
+      loadVerifications();
+      loadQuizSettings();
+      loadQuizzes();
+      loadQuizWinners();
+      loadSlides();
+      loadManualHistory();
+      loadPromoPayment();
+      loadPromoPrices();
+      loadPromotions();
+      setInterval(() => { loadStats(); loadExtendedStats(); }, 30000);
+    }
+
+    function toast(msg) {
+      const t = document.getElementById('toast');
+      t.innerText = msg; 
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 2800);
+    }
+
+    function switchTab(id, el) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      el.classList.add('active');
+      document.getElementById('tab-' + id).classList.add('active');
+    }
+
+    function updateTotalRefDisplay(){
+      const first = Number(document.getElementById('firstReferralReq').value) || 0;
+      const second = Number(document.getElementById('secondReferralReq').value) || 0;
+      document.getElementById('totalRefDisplay').innerText = first + second;
+    }
+
+    function loadConfig(){
+      db.ref('config').on('value', snap => {
+        configData = snap.exists() ? snap.val() : {};
+        
+        if(!configData.adSlots || !Array.isArray(configData.adSlots) || configData.adSlots.length < 4){
+          const existing = configData.adSlots || [];
+          configData.adSlots = [];
+          for(let i=0; i<Math.max(4, existing.length); i++){
+            configData.adSlots.push(existing[i] || { network: 'none', id: '', reward: '', limit: '' });
+          }
+        }
+        if(!configData.webTasks) configData.webTasks = {};
+        
+        document.getElementById('botUsername').value = configData.botUsername || '';
+        document.getElementById('currencySymbol').value = configData.currencySymbol || 'TK';
+        document.getElementById('dailyBonusAmount').value = configData.dailyBonusAmount || 20;
+        document.getElementById('refBonus').value = configData.refBonus || 5;
+        document.getElementById('tutorialLink').value = configData.tutorialLink || '';
+        document.getElementById('tutorialLinkFb').value = configData.tutorialLinkFb || '';
+        document.getElementById('tutorialLinkTikTok').value = configData.tutorialLinkTikTok || '';
+        document.getElementById('supportLink').value = configData.supportLink || '';
+        document.getElementById('minWithdraw').value = configData.minWithdraw || 200;
+        document.getElementById('firstReferralReq').value = configData.firstReferralReq || 20;
+        document.getElementById('secondReferralReq').value = configData.secondReferralReq || 10;
+        updateTotalRefDisplay();
+        document.getElementById('withdrawNotice').value = configData.withdrawNotice || '';
+        document.getElementById('paymentMethods').value = configData.paymentMethods ? configData.paymentMethods.join(', ') : 'Bkash, Nagad';
+        
+        document.getElementById('dailyAdLimit').value = configData.dailyAdLimit || 10;
+        document.getElementById('adReward').value = configData.adReward || 0.5;
+        
+        document.getElementById('verificationEnabled').checked = configData.verificationEnabled === true;
+        document.getElementById('verificationFee').value = configData.verificationFee || 50;
+        document.getElementById('verificationNote').value = configData.verificationNote || '';
+        document.getElementById('bkashNumber').value = configData.bkashNumber || '';
+        document.getElementById('nagadNumber').value = configData.nagadNumber || '';
+        document.getElementById('rocketNumber').value = configData.rocketNumber || '';
+        
+        renderAdSlots();
+        renderTasks();
+      });
+    }
+
+    function loadExtendedStats(){
+      db.ref('users').once('value').then(s => {
+        let totalUsers = 0, verified = 0, totalBalance = 0, totalRefs = 0;
+        const today = new Date().toISOString().slice(0, 10);
+        let activeToday = 0;
+        
+        s.forEach(c => {
+          const u = c.val();
+          totalUsers++;
+          if(u.verified) verified++;
+          totalBalance += Number(u.balance || 0);
+          totalRefs += Number(u.referrals || 0);
+          if(u.lastActive === today) activeToday++;
+        });
+        
+        const extEl = document.getElementById('extendedStats');
+        if(extEl){
+          extEl.innerHTML = `
+            <div class="stat-card" style="background:linear-gradient(135deg,#e8f5ff,#d4ebff);">
+              <i class="fas fa-fire" style="color:#0984e3;"></i>
+              <div class="val">${activeToday}</div>
+              <div class="lbl">Active Today</div>
+            </div>
+            <div class="stat-card" style="background:linear-gradient(135deg,#fff7e6,#ffe8c2);">
+              <i class="fas fa-coins" style="color:#ff9f43;"></i>
+              <div class="val">${totalBalance.toFixed(0)}</div>
+              <div class="lbl">Total Balance</div>
+            </div>
+            <div class="stat-card" style="background:linear-gradient(135deg,#f0e6ff,#e0d0ff);">
+              <i class="fas fa-users" style="color:#6C5CE7;"></i>
+              <div class="val">${totalRefs}</div>
+              <div class="lbl">Total Refs</div>
+            </div>
+            <div class="stat-card" style="background:linear-gradient(135deg,#e8f8f5,#d0f0ea);">
+              <i class="fas fa-percentage" style="color:#00b894;"></i>
+              <div class="val">${totalUsers > 0 ? Math.round(verified/totalUsers*100) : 0}%</div>
+              <div class="lbl">Verify Rate</div>
+            </div>`;
+        }
+      });
+    }
+
+    // ========== SLIDES ==========
+    function loadSlides(){
+      db.ref('config/slides').on('value', snap => {
+        if(snap.exists()){ currentSlides = snap.val(); }
+        else { currentSlides = DEFAULT_SLIDES; }
+        renderSlides();
+      });
+    }
+
+    function renderSlides(){
+      const container = document.getElementById('slidesContainer');
+      if(!container) return;
+      
+      const keys = Object.keys(currentSlides);
+      document.getElementById('slideCount').innerText = keys.length + ' slides';
+      
+      if(keys.length === 0){
+        container.innerHTML = '<div class="empty"><i class="fas fa-images"></i>No slides</div>';
+        renderPreview();
+        return;
+      }
+      
+      let html = '';
+      keys.forEach(k => {
+        const s = currentSlides[k];
+        const isEnabled = s.enabled !== false;
+        html += `
+        <div class="slide-card">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <div style="width:50px;height:50px;border-radius:12px;background:${s.color || 'linear-gradient(135deg,#6C5CE7,#A29BFE)'};display:flex;align-items:center;justify-content:center;font-size:1.5rem;">${s.icon || '🎯'}</div>
+              <div>
+                <b style="font-size:.95rem;">${s.title || 'Untitled'}</b>
+                <div style="font-size:.75rem;color:#888;">${s.subtitle || ''}</div>
+              </div>
+            </div>
+            <span style="background:${isEnabled ? 'rgba(0,184,148,.15);color:#00b894' : 'rgba(255,71,87,.15);color:#ff4757'};padding:4px 10px;border-radius:20px;font-size:.7rem;font-weight:800;">${isEnabled ? 'ACTIVE' : 'OFF'}</span>
+          </div>
+          
+          <div class="row-2" style="margin-bottom:8px;">
+            <div class="form-group" style="margin-bottom:0;"><label>Icon</label><input type="text" id="sIcon_${k}" value="${s.icon || ''}" maxlength="4" style="text-align:center;font-size:1.2rem;"></div>
+            <div class="form-group" style="margin-bottom:0;"><label>Toggle</label>
+              <select id="sEnabled_${k}">
+                <option value="true" ${isEnabled ? 'selected' : ''}>✅ Active</option>
+                <option value="false" ${!isEnabled ? 'selected' : ''}>❌ Off</option>
+              </select>
+            </div>
+          </div>
+          
+          <div class="form-group"><label>Title</label><input type="text" id="sTitle_${k}" value="${(s.title || '').replace(/"/g, '&quot;')}" maxlength="30"></div>
+          <div class="form-group"><label>Subtitle</label><input type="text" id="sSubtitle_${k}" value="${(s.subtitle || '').replace(/"/g, '&quot;')}" maxlength="40"></div>
+          
+          <div class="form-group">
+            <label>Color</label>
+            <select id="sColor_${k}">
+              <option value="linear-gradient(135deg,#667eea,#764ba2)" ${s.color === 'linear-gradient(135deg,#667eea,#764ba2)' ? 'selected' : ''}>🟣 Purple</option>
+              <option value="linear-gradient(135deg,#f093fb,#f5576c)" ${s.color === 'linear-gradient(135deg,#f093fb,#f5576c)' ? 'selected' : ''}>🌸 Pink</option>
+              <option value="linear-gradient(135deg,#4facfe,#00f2fe)" ${s.color === 'linear-gradient(135deg,#4facfe,#00f2fe)' ? 'selected' : ''}>💙 Blue</option>
+              <option value="linear-gradient(135deg,#43e97b,#38f9d7)" ${s.color === 'linear-gradient(135deg,#43e97b,#38f9d7)' ? 'selected' : ''}>💚 Green</option>
+              <option value="linear-gradient(135deg,#fa709a,#fee140)" ${s.color === 'linear-gradient(135deg,#fa709a,#fee140)' ? 'selected' : ''}>🧡 Orange</option>
+              <option value="linear-gradient(135deg,#00b894,#00cec9)" ${s.color === 'linear-gradient(135deg,#00b894,#00cec9)' ? 'selected' : ''}>💎 Teal</option>
+              <option value="linear-gradient(135deg,#f6d365,#fda085)" ${s.color === 'linear-gradient(135deg,#f6d365,#fda085)' ? 'selected' : ''}>⭐ Gold</option>
+              <option value="linear-gradient(135deg,#6C5CE7,#A29BFE)" ${s.color === 'linear-gradient(135deg,#6C5CE7,#A29BFE)' ? 'selected' : ''}>💜 Violet</option>
+              <option value="linear-gradient(135deg,#ff6a88,#ff99ac)" ${s.color === 'linear-gradient(135deg,#ff6a88,#ff99ac)' ? 'selected' : ''}>🌹 Rose</option>
+            </select>
+          </div>
+          
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-green btn-small" style="flex:1;" onclick="saveSlide('${k}')"><i class="fas fa-save"></i> Save</button>
+            <button class="btn btn-red btn-small" style="flex:1;" onclick="deleteSlide('${k}')"><i class="fas fa-trash"></i> Delete</button>
+          </div>
+        </div>`;
+      });
+      
+      container.innerHTML = html;
+      renderPreview();
+    }
+
+    function renderPreview(){
+      const preview = document.getElementById('slidePreview');
+      if(!preview) return;
+      
+      const keys = Object.keys(currentSlides);
+      const firstEnabled = keys.find(k => currentSlides[k].enabled !== false);
+      
+      if(!firstEnabled){
+        preview.innerHTML = '<div style="padding:20px;text-align:center;color:#888;font-size:.8rem;">No active slides</div>';
+        return;
+      }
+      
+      const s = currentSlides[firstEnabled];
+      preview.innerHTML = `
+        <div style="padding:20px;color:#fff;background:${s.color || 'linear-gradient(135deg,#6C5CE7,#A29BFE)'};position:relative;overflow:hidden;">
+          <div style="position:absolute;top:-40px;right:-40px;width:120px;height:120px;background:rgba(255,255,255,.15);border-radius:50%;"></div>
+          <div style="display:flex;align-items:center;gap:15px;position:relative;z-index:2;">
+            <div style="width:55px;height:55px;background:rgba(255,255,255,.25);border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:1.8rem;">${s.icon || '🎯'}</div>
+            <div style="flex:1;">
+              <div style="font-size:1rem;font-weight:900;margin-bottom:4px;">${s.title || 'Title'}</div>
+              <div style="font-size:.78rem;opacity:.95;">${s.subtitle || 'Subtitle'}</div>
+            </div>
+          </div>
+        </div>`;
+    }
+
+    function addNewSlide(){
+      const id = 's' + Date.now();
+      db.ref('config/slides/' + id).set({
+        icon: '🎯', title: 'New Slide', subtitle: 'Description here',
+        color: 'linear-gradient(135deg,#6C5CE7,#A29BFE)', enabled: true
+      }).then(() => toast('✅ New slide added!'));
+    }
+
+    function saveSlide(key){
+      const icon = document.getElementById('sIcon_' + key).value.trim() || '🎯';
+      const title = document.getElementById('sTitle_' + key).value.trim() || 'Untitled';
+      const subtitle = document.getElementById('sSubtitle_' + key).value.trim() || '';
+      const color = document.getElementById('sColor_' + key).value;
+      const enabled = document.getElementById('sEnabled_' + key).value === 'true';
+      
+      db.ref('config/slides/' + key).set({ icon, title, subtitle, color, enabled })
+        .then(() => toast('✅ Slide saved!'));
+    }
+
+    function deleteSlide(key){
+      if(!confirm('Delete?')) return;
+      db.ref('config/slides/' + key).remove().then(() => toast('🗑️ Deleted!'));
+    }
+
+    function resetToDefault(){
+      if(!confirm('Reset to default slides?')) return;
+      db.ref('config/slides').set(DEFAULT_SLIDES).then(() => toast('✅ Reset complete!'));
+    }
+
+    // ========== AD SLOTS ==========
+    function renderAdSlots(){
+      const container = document.getElementById('adsContainer');
+      container.innerHTML = '';
+      const slots = configData.adSlots || [];
+      document.getElementById('slotCount').innerText = slots.length + ' slots';
+      
+      slots.forEach((slot, i) => {
+        let isActive = slot.network && slot.network !== 'none';
+        let div = document.createElement('div');
+        div.className = 'ad-slot-card';
+        div.innerHTML = `
+          <button class="remove-slot-btn" onclick="removeSlot(${i})"><i class="fas fa-times"></i></button>
+          <div class="ad-slot-head">
+            <b><i class="fas fa-layer-group"></i> Slot ${i+1}</b>
+            <span class="badge ${isActive?'badge-active':'badge-off'}">${isActive?'ACTIVE':'DISABLED'}</span>
+          </div>
+          <div class="form-group" style="margin-bottom:10px;">
+            <label>Network</label>
+            <select id="adNet_${i}">
+              <option value="none" ${slot.network==='none'?'selected':''}>🔴 Disabled</option>
+              <option value="monetag" ${slot.network==='monetag'?'selected':''}>🟣 Monetag</option>
+              <option value="adsgram" ${slot.network==='adsgram'?'selected':''}>🔵 Adsgram</option>
+              <option value="gigapub" ${slot.network==='gigapub'?'selected':''}>🟠 GigaPub</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin-bottom:10px;"><label>Zone ID</label><input type="text" id="adId_${i}" value="${slot.id||''}"></div>
+          <div class="row-2">
+            <div class="form-group" style="margin-bottom:0;"><label>Reward</label><input type="number" step="0.01" id="adReward_${i}" value="${slot.reward||''}"></div>
+            <div class="form-group" style="margin-bottom:0;"><label>Limit</label><input type="number" id="adLimit_${i}" value="${slot.limit||''}"></div>
+          </div>`;
+        container.appendChild(div);
+      });
+    }
+
+    function addNewSlot(){
+      saveAdsSilent();
+      setTimeout(() => {
+        configData.adSlots.push({ network: 'none', id: '', reward: '', limit: '' });
+        db.ref('config/adSlots').set(configData.adSlots).then(() => {
+          toast('✅ New slot added!'); renderAdSlots();
+        });
+      }, 300);
+    }
+
+    function removeSlot(i){
+      if(configData.adSlots.length <= 4) return toast('❌ Minimum 4 slots');
+      if(!confirm(`Remove Slot ${i+1}?`)) return;
+      configData.adSlots.splice(i, 1);
+      db.ref('config/adSlots').set(configData.adSlots).then(() => {
+        toast('🗑️ Removed'); renderAdSlots();
+      });
+    }
+
+    function saveAdsSilent(){
+      let slots = [];
+      for(let i=0; i<configData.adSlots.length; i++) {
+        const netEl = document.getElementById(`adNet_${i}`);
+        if(!netEl) continue;
+        let reward = document.getElementById(`adReward_${i}`).value;
+        let limit = document.getElementById(`adLimit_${i}`).value;
+        slots.push({
+          network: netEl.value, id: document.getElementById(`adId_${i}`).value.trim(),
+          reward: reward ? Number(reward) : null, limit: limit ? Number(limit) : null
+        });
+      }
+      configData.adSlots = slots;
+    }
+
+    function saveSettings() {
+      let methods = document.getElementById('paymentMethods').value.split(',').map(m => m.trim()).filter(m => m);
+      const firstReq = Number(document.getElementById('firstReferralReq').value) || 0;
+      const secondReq = Number(document.getElementById('secondReferralReq').value) || 0;
+      
+      db.ref('config').update({
+        botUsername: document.getElementById('botUsername').value.trim(),
+        currencySymbol: document.getElementById('currencySymbol').value.trim() || 'TK',
+        dailyBonusAmount: Number(document.getElementById('dailyBonusAmount').value) || 0,
+        refBonus: Number(document.getElementById('refBonus').value) || 0,
+        tutorialLink: document.getElementById('tutorialLink').value.trim(),
+        tutorialLinkFb: document.getElementById('tutorialLinkFb').value.trim(),
+        tutorialLinkTikTok: document.getElementById('tutorialLinkTikTok').value.trim(),
+        supportLink: document.getElementById('supportLink').value.trim(),
+        minWithdraw: Number(document.getElementById('minWithdraw').value) || 0,
+        firstReferralReq: firstReq,
+        secondReferralReq: secondReq,
+        withdrawNotice: document.getElementById('withdrawNotice').value.trim(),
+        paymentMethods: methods
+      }).then(() => toast(`✅ Saved!`));
+    }
+
+    function saveVerificationSettings() {
+      db.ref('config').update({
+        verificationEnabled: document.getElementById('verificationEnabled').checked,
+        verificationFee: Number(document.getElementById('verificationFee').value) || 0,
+        verificationNote: document.getElementById('verificationNote').value.trim(),
+        bkashNumber: document.getElementById('bkashNumber').value.trim(),
+        nagadNumber: document.getElementById('nagadNumber').value.trim(),
+        rocketNumber: document.getElementById('rocketNumber').value.trim()
+      }).then(() => toast('✅ Verification saved!'));
+    }
+
+    function saveAds() {
+      let slots = [];
+      for(let i=0; i<configData.adSlots.length; i++) {
+        const netEl = document.getElementById(`adNet_${i}`);
+        if(!netEl) continue;
+        let reward = document.getElementById(`adReward_${i}`).value;
+        let limit = document.getElementById(`adLimit_${i}`).value;
+        slots.push({
+          network: netEl.value, id: document.getElementById(`adId_${i}`).value.trim(),
+          reward: reward ? Number(reward) : null, limit: limit ? Number(limit) : null
+        });
+      }
+      db.ref('config').update({
+        dailyAdLimit: Number(document.getElementById('dailyAdLimit').value) || 10,
+        adReward: Number(document.getElementById('adReward').value) || 0.5,
+        adSlots: slots
+      }).then(() => toast('✅ Ads saved!'));
+    }
+
+    function loadQuizSettings(){
+      db.ref('config').on('value', snap => {
+        if(snap.exists()){
+          const c = snap.val();
+          document.getElementById('quizEnabled').checked = c.quizEnabled === true;
+          document.getElementById('quizReward').value = c.quizReward || 5;
+          document.getElementById('quizTime').value = c.quizTime || 30;
+          document.getElementById('quizDailyLimit').value = c.quizDailyLimit || 3;
+        }
+      });
+    }
+
+    function saveQuizSettings(){
+      db.ref('config').update({
+        quizEnabled: document.getElementById('quizEnabled').checked,
+        quizReward: Number(document.getElementById('quizReward').value) || 5,
+        quizTime: Number(document.getElementById('quizTime').value) || 30,
+        quizDailyLimit: Number(document.getElementById('quizDailyLimit').value) || 3
+      }).then(() => toast('✅ Quiz saved!'));
+    }
+
+    function loadQuizzes(){
+      db.ref('quizzes').on('value', snap => {
+        let html = '';
+        let count = 0;
+        
+        if(snap.exists()){
+          const quizzes = [];
+          snap.forEach(child => { const q = child.val(); q._key = child.key; quizzes.push(q); });
+          quizzes.sort((a,b) => (b.date || '').localeCompare(a.date || ''));
+          
+          quizzes.forEach(q => {
+            count++;
+            html += `
+            <div style="border:1px solid #eee;padding:12px;border-radius:12px;margin-bottom:10px;background:#fafbff;">
+              <div style="font-weight:800;font-size:.9rem;margin-bottom:8px;">${q.question}</div>
+              <div style="font-size:.75rem;color:#666;line-height:1.6;">
+                <div>A) ${q.optA}</div><div>B) ${q.optB}</div>
+                <div>C) ${q.optC}</div><div>D) ${q.optD}</div>
+              </div>
+              <div style="margin-top:8px;padding-top:8px;border-top:1px dashed #ddd;display:flex;justify-content:space-between;">
+                <span style="color:#00b894;font-weight:800;font-size:.8rem;">✅ ${q.correct}</span>
+                <button class="btn btn-red btn-small" onclick="deleteQuiz('${q._key}')"><i class="fas fa-trash"></i></button>
+              </div>
+            </div>`;
+          });
+        }
+        
+        if(count === 0) html = '<div class="empty"><i class="fas fa-question-circle"></i>No quizzes</div>';
+        document.getElementById('quizList').innerHTML = html;
+        document.getElementById('quizCount').innerText = count;
+      });
+    }
+
+    function addQuiz(){
+      const question = document.getElementById('quizQuestion').value.trim();
+      const optA = document.getElementById('quizOptA').value.trim();
+      const optB = document.getElementById('quizOptB').value.trim();
+      const optC = document.getElementById('quizOptC').value.trim();
+      const optD = document.getElementById('quizOptD').value.trim();
+      const correct = document.getElementById('quizCorrect').value;
+      const category = document.getElementById('quizCategory').value;
+      let date = document.getElementById('quizDate').value;
+      
+      if(!question || !optA || !optB || !optC || !optD) return toast('❌ সব field পূরণ করুন');
+      if(!date) date = new Date().toISOString().slice(0, 10);
+      
+      db.ref('quizzes/Q_' + Date.now()).set({
+        question, optA, optB, optC, optD, correct, category, date,
+        createdAt: Date.now()
+      }).then(() => {
+        toast('✅ Quiz added!');
+        ['quizQuestion','quizOptA','quizOptB','quizOptC','quizOptD'].forEach(i => document.getElementById(i).value = '');
+      });
+    }
+
+    function deleteQuiz(id){
+      if(confirm('Delete?')) db.ref('quizzes/' + id).remove().then(() => toast('🗑️ Deleted!'));
+    }
+
+    function loadQuizWinners(){
+      const today = new Date().toISOString().slice(0, 10);
+      db.ref('quizResults').orderByChild('date').equalTo(today).on('value', snap => {
+        let html = '';
+        let count = 0;
+        
+        if(snap.exists()){
+          const winners = [];
+          snap.forEach(child => { const r = child.val(); if(r.isCorrect === true) winners.push(r); });
+          winners.sort((a,b) => (b.timestamp || 0) - (a.timestamp || 0));
+          
+          winners.forEach(w => {
+            count++;
+            html += `
+            <div class="user-row">
+              <div class="user-info">
+                <img src="${w.photo || 'https://via.placeholder.com/40'}">
+                <div><div class="name">${w.userName || 'User'}</div><div class="id">+${w.reward} TK</div></div>
+              </div>
+            </div>`;
+          });
+        }
+        
+        if(count === 0) html = '<div class="empty"><i class="fas fa-trophy"></i>No winners</div>';
+        document.getElementById('quizWinners').innerHTML = html;
+        document.getElementById('winnerCount').innerText = count;
+      });
+    }
+
+    function renderTasks(){
+      let html = '';
+      const tasks = configData.webTasks || {};
+      const keys = Object.keys(tasks);
+      document.getElementById('taskCount').innerText = keys.length;
+      
+      if(keys.length === 0){
+        html = '<div class="empty"><i class="fas fa-inbox"></i>No tasks</div>';
+      } else {
+        keys.forEach(k => {
+          let t = tasks[k];
+          html += `
+          <div style="border-bottom:1px solid #f0f0f0; padding:12px 0; display:flex; justify-content:space-between;">
+            <div>
+              <b style="font-size:.9rem;">${t.name||''}</b>
+              <span style="color:#6C5CE7;font-weight:800;background:rgba(108,92,231,0.1);padding:2px 8px;border-radius:8px;font-size:.75rem;">+${t.reward||0}</span>
+            </div>
+            <button class="btn btn-red btn-small" onclick="deleteTask('${k}')"><i class="fas fa-trash"></i></button>
+          </div>`;
+        });
+      }
+      document.getElementById('tasksList').innerHTML = html;
+    }
+
+    function addTask() {
+      let name = document.getElementById('taskName').value.trim();
+      let reward = Number(document.getElementById('taskReward').value);
+      let url = document.getElementById('taskUrl').value.trim();
+      let cooldown = Number(document.getElementById('taskCooldown').value) || 15;
+      let icon = document.getElementById('taskIcon').value.trim() || 'https://via.placeholder.com/45';
+      
+      if(!name || !url || !reward) return toast('❌ Fill all');
+      
+      db.ref('config/webTasks/task_' + Date.now()).set({ name, reward, url, icon, cooldown })
+      .then(() => { 
+        toast('✅ Task added!'); 
+        ['taskName','taskReward','taskUrl','taskIcon','taskCooldown'].forEach(i => document.getElementById(i).value = '');
+      });
+    }
+    
+    function deleteTask(id) { 
+      if(confirm('Delete?')) db.ref('config/webTasks/' + id).remove().then(() => toast('🗑️ Deleted!'));
+    }
+
+    function loadVerifications(){
+      db.ref('verifications').on('value', snap => {
+        let html = '';
+        let pendingCount = 0;
+        
+        if(snap.exists()){
+          const items = [];
+          snap.forEach(child => {
+            let v = child.val();
+            if(v.status === 'pending') items.push({ key: child.key, ...v });
+          });
+          items.sort((a,b) => (b.timestamp||0) - (a.timestamp||0));
+          pendingCount = items.length;
+          
+          items.forEach(v => {
+            let date = new Date(v.timestamp).toLocaleString();
+            html += `
+            <div class="wd-card">
+              <div class="wd-head">
+                <span style="color:#0984e3;background:rgba(9,132,227,0.1);padding:4px 12px;border-radius:8px;font-size:.8rem;">${v.method}</span> 
+                <span style="color:#6C5CE7;font-size:1.1rem;font-weight:900;">${v.amount} TK</span>
+              </div>
+              <div class="wd-info">
+                <b>👤 Name:</b> ${v.userName}<br>
+                <b>🆔 User ID:</b> <code>${v.userId}</code><br>
+                <b>📱 Sender:</b> <span style="color:#d63031;font-weight:800;">${v.senderNumber}</span><br>
+                <b>🧾 Trx:</b> <span style="color:#00b894;font-weight:800;">${v.transactionId}</span><br>
+                <small style="color:#999;">📅 ${date}</small>
+              </div>
+              <div class="wd-actions">
+                <button class="btn btn-green btn-small" style="flex:1" onclick="approveV('${v.key}','${v.userId}')">✅ Verify</button>
+                <button class="btn btn-red btn-small" style="flex:1" onclick="rejectV('${v.key}')">❌ Reject</button>
+              </div>
+            </div>`;
+          });
+        }
+        
+        if(pendingCount === 0) html = '<div class="empty"><i class="fas fa-check-circle" style="color:#00b894;"></i>No Pending</div>';
+        document.getElementById('vContainer').innerHTML = html;
+        document.getElementById('vCount').innerText = pendingCount;
+        document.getElementById('statPendingV').innerText = pendingCount;
+      });
+    }
+
+    async function approveV(id, userId) {
+      if(!confirm('Approve?')) return;
+      try {
+        await db.ref('users/' + userId).update({ verified: true, verifiedAt: Date.now() });
+        await db.ref('verifications/' + id).update({ status: 'approved', approvedAt: Date.now() });
+        toast('✅ Verified!');
+      } catch(e) { toast('❌ ' + e.message); }
+    }
+    async function rejectV(id) {
+      if(!confirm('Reject?')) return;
+      await db.ref('verifications/' + id).update({ status: 'rejected', rejectedAt: Date.now() });
+      toast('❌ Rejected!');
+    }
+
+    function filterWd(status){
+      currentWdFilter = status;
+      ['pending','approved','rejected','all'].forEach(s => {
+        const btn = document.getElementById('wdF_' + s);
+        if(btn) btn.classList.toggle('active', s === status);
+      });
+      renderWdList();
+    }
+
+    function renderWdList(){
+      let html = '';
+      let filtered = allWithdrawals.filter(w => !w.isAdmin);
+      
+      if(currentWdFilter !== 'all') filtered = filtered.filter(w => w.status === currentWdFilter);
+      filtered.sort((a,b) => (b.timestamp || 0) - (a.timestamp || 0));
+      
+      if(filtered.length === 0){
+        html = '<div class="empty"><i class="fas fa-inbox"></i>No requests</div>';
+      } else {
+        filtered.forEach(req => {
+          const statusColor = req.status === 'pending' ? '#ff9f43' : req.status === 'approved' ? '#00b894' : '#ff4757';
+          const date = new Date(req.timestamp).toLocaleString();
+          
+          html += `
+          <div class="wd-card">
+            <div class="wd-head">
+              <span style="color:#0984e3;background:rgba(9,132,227,0.1);padding:4px 12px;border-radius:8px;font-size:.8rem;">${req.method}</span>
+              <span style="color:#6C5CE7;font-size:1.2rem;font-weight:900;">${req.amount} TK</span>
+            </div>
+            <div style="margin-bottom:10px;">
+              <span style="background:${statusColor}22;color:${statusColor};padding:3px 10px;border-radius:6px;font-size:.75rem;font-weight:800;">${(req.status||'pending').toUpperCase()}</span>
+            </div>
+            <div class="wd-info">
+              <b>Account:</b> <span style="color:#d63031;font-weight:800;">${req.account}</span><br>
+              <b>User ID:</b> <code>${req.userId}</code><br>
+              <b>Name:</b> ${req.userName}<br>
+              <small style="color:#999;">📅 ${date}</small>
+            </div>
+            ${req.status === 'pending' ? `
+            <div class="wd-actions">
+              <button class="btn btn-green btn-small" style="flex:1" onclick="approveWd('${req.key}')">✅ Approve</button>
+              <button class="btn btn-red btn-small" style="flex:1" onclick="rejectWd('${req.key}','${req.userId}',${req.amount})">❌ Reject</button>
+            </div>` : ''}
+          </div>`;
+        });
+      }
+      
+      document.getElementById('wd-container').innerHTML = html;
+      document.getElementById('wdCount2').innerText = filtered.length;
+    }
+
+    function loadWithdrawals(){
+      db.ref('withdrawals').on('value', snap => {
+        allWithdrawals = [];
+        let pendingAmt = 0, approvedAmt = 0, pending = 0;
+        
+        if(snap.exists()){
+          snap.forEach(child => {
+            const req = child.val();
+            req.key = child.key;
+            allWithdrawals.push(req);
+            if(req.status === 'pending' && !req.isAdmin){ pending++; pendingAmt += Number(req.amount||0); }
+            if(req.status === 'approved' && !req.isAdmin){ approvedAmt += Number(req.amount||0); }
+          });
+        }
+        
+        document.getElementById('wdPendingAmt').innerText = pendingAmt.toFixed(2);
+        document.getElementById('wdApprovedAmt').innerText = approvedAmt.toFixed(2);
+        document.getElementById('statPending').innerText = pending;
+        renderWdList();
+      });
+    }
+
+    function approveWd(id) {
+      if(confirm('Approve?')) {
+        db.ref('withdrawals/' + id).update({ status: 'approved', approvedAt: Date.now() })
+        .then(() => { toast('✅ Payment Sent!'); loadStats(); });
+      }
+    }
+    
+    async function rejectWd(id, userId, amount) {
+      if(confirm('Reject & refund ' + amount + '?')) {
+        try {
+          const snap = await db.ref('users/' + userId).once('value');
+          if(snap.exists()) await db.ref('users/' + userId).update({ balance: (snap.val().balance || 0) + Number(amount) });
+          await db.ref('withdrawals/' + id).update({ status: 'rejected', rejectedAt: Date.now() });
+          toast('↩️ Refunded!');
+        } catch(e) { toast('❌ ' + e.message); }
+      }
+    }
+
+    function searchManualUser(){
+      const q = (document.getElementById('manualUserSearch').value || '').toLowerCase().trim();
+      const resultEl = document.getElementById('manualUserResult');
+      
+      if(!q){ resultEl.innerHTML = ''; manualSelectedUser = null; return; }
+      
+      const matches = allUsers.filter(u => (u.name||'').toLowerCase().includes(q) || String(u.id||'').includes(q)).slice(0, 5);
+      
+      if(matches.length === 0){
+        resultEl.innerHTML = '<div class="empty" style="padding:15px;"><i class="fas fa-user-slash"></i>No user</div>';
+        return;
+      }
+      
+      let html = '<div style="background:#f9f9f9;border-radius:12px;padding:12px;margin-top:10px;">';
+      matches.forEach(u => {
+        html += `
+        <div class="search-user" onclick="selectManualUser('${u.id}')">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <img src="${u.photo || 'https://via.placeholder.com/40'}" style="width:40px;height:40px;border-radius:50%;">
+            <div><div style="font-weight:800;font-size:.85rem;">${u.name || 'User'}</div><div style="font-size:.7rem;color:#888;">ID: ${u.id}</div></div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-weight:900;color:#6C5CE7;">${Number(u.balance || 0).toFixed(2)} TK</div>
+          </div>
+        </div>`;
+      });
+      html += '</div>';
+      resultEl.innerHTML = html;
+    }
+
+    function selectManualUser(userId){
+      manualSelectedUser = allUsers.find(u => String(u.id) === String(userId));
+      if(!manualSelectedUser) return;
+      
+      const u = manualSelectedUser;
+      const sym = configData.currencySymbol || 'TK';
+      
+      const resultEl = document.getElementById('manualUserResult');
+      resultEl.innerHTML = `
+        <div class="success-box" style="margin-top:12px;"><i class="fas fa-check-circle"></i> <b>User Selected!</b></div>
+        
+        <div style="background:linear-gradient(135deg,#f0f4ff,#e8eaff);padding:15px;border-radius:14px;margin-bottom:15px;">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <img src="${u.photo || 'https://via.placeholder.com/55'}" style="width:55px;height:55px;border-radius:50%;">
+            <div>
+              <div style="font-weight:900;font-size:1.05rem;">${u.name || 'User'}</div>
+              <div style="font-size:.75rem;color:#888;">ID: ${u.id}</div>
+              <div style="font-size:.85rem;color:#6C5CE7;font-weight:900;margin-top:4px;">💰 ${Number(u.balance || 0).toFixed(2)} ${sym}</div>
+            </div>
+          </div>
+        </div>
+        
+        <div style="background:#fff;padding:15px;border-radius:14px;border:2px solid #e8eaff;">
+          <div class="form-group">
+            <label>💰 Amount (${sym})</label>
+            <input type="number" step="0.01" id="manualWithdrawAmount" style="font-size:1.1rem;font-weight:800;text-align:center;">
+            <div style="display:flex;justify-content:space-between;font-size:.72rem;color:#888;margin-top:6px;">
+              <span>Balance: <b style="color:#6C5CE7;">${Number(u.balance || 0).toFixed(2)}</b></span>
+              <span style="cursor:pointer;color:#0984e3;font-weight:800;text-decoration:underline;" onclick="document.getElementById('manualWithdrawAmount').value='${Number(u.balance || 0).toFixed(2)}'">📌 Full</span>
+            </div>
+          </div>
+          
+          <button class="btn btn-green" onclick="confirmManualWithdraw()"><i class="fas fa-paper-plane"></i> Withdraw Now</button>
+          <button class="btn btn-red" onclick="cancelManual()"><i class="fas fa-times"></i> Cancel</button>
+        </div>`;
+    }
+
+    function cancelManual(){
+      manualSelectedUser = null;
+      document.getElementById('manualUserResult').innerHTML = '';
+      document.getElementById('manualUserSearch').value = '';
+    }
+
+    async function confirmManualWithdraw(){
+      if(!manualSelectedUser) return;
+      
+      const amount = Number(document.getElementById('manualWithdrawAmount').value);
+      const sym = configData.currencySymbol || 'TK';
+      
+      if(!amount || amount <= 0) return toast('❌ Enter amount');
+      if(amount > Number(manualSelectedUser.balance || 0)) return toast('❌ Insufficient');
+      
+      if(!confirm(`Confirm?\n\n👤 ${manualSelectedUser.name}\n💰 ${amount} ${sym}`)) return;
+      
+      try {
+        await db.ref('withdrawals/WD' + Date.now()).set({
+          userId: String(manualSelectedUser.id),
+          userName: manualSelectedUser.name || 'User',
+          userPhoto: manualSelectedUser.photo || '',
+          method: 'Payment', account: 'N/A',
+          amount: amount, status: 'approved',
+          timestamp: Date.now(), approvedAt: Date.now(), isAdmin: true
+        });
+        
+        await db.ref('users/' + manualSelectedUser.id).update({
+          balance: Number(manualSelectedUser.balance || 0) - amount
+        });
+        
+        toast(`✅ Withdrawn ${amount} ${sym}`);
+        cancelManual();
+        loadManualHistory();
+      } catch(e) { toast('❌ ' + e.message); }
+    }
+
+    function loadManualHistory(){
+      db.ref('withdrawals').on('value', snap => {
+        let html = '';
+        let count = 0;
+        const items = [];
+        
+        if(snap.exists()){
+          snap.forEach(child => {
+            const w = child.val();
+            if(w.isAdmin === true) items.push(w);
+          });
+          
+          items.sort((a,b) => (b.timestamp || 0) - (a.timestamp || 0));
+          count = items.length;
+          
+          items.slice(0, 20).forEach(w => {
+            const date = new Date(w.timestamp).toLocaleString();
+            html += `
+            <div class="user-row">
+              <div class="user-info">
+                <img src="${w.userPhoto || 'https://via.placeholder.com/40'}">
+                <div><div class="name">${w.userName || 'User'}</div><div class="id">${date}</div></div>
+              </div>
+              <div style="text-align:right;">
+                <div style="font-weight:900;color:#00b894;">-${w.amount} TK</div>
+              </div>
+            </div>`;
+          });
+        }
+        
+        if(count === 0) html = '<div class="empty"><i class="fas fa-hand-holding-usd"></i>No admin withdraws</div>';
+        document.getElementById('manualHistoryList').innerHTML = html;
+        document.getElementById('manualCount').innerText = count;
+      });
+    }
+
+    // ========== PROMOTION ==========
+    function loadPromoPayment(){
+      db.ref('config/promotion').on('value', snap => {
+        if(snap.exists()){
+          const p = snap.val();
+          document.getElementById('promoBkash').value = p.bkash || '';
+          document.getElementById('promoNagad').value = p.nagad || '';
+          document.getElementById('promoInstructions').value = p.instructions || '';
+        }
+      });
+    }
+
+    function savePromoPayment(){
+      db.ref('config/promotion').update({
+        bkash: document.getElementById('promoBkash').value.trim(),
+        nagad: document.getElementById('promoNagad').value.trim(),
+        instructions: document.getElementById('promoInstructions').value.trim()
+      }).then(() => toast('✅ Payment info saved!'));
+    }
+
+    function loadPromoPrices(){
+      db.ref('config/promoPrices').on('value', snap => {
+        currentPromoPrices = snap.exists() ? snap.val() : DEFAULT_PROMO_PRICES;
+        renderPromoPrices();
+      });
+    }
+
+    function renderPromoPrices(){
+      const container = document.getElementById('promoPricesContainer');
+      if(!container) return;
+      
+      const platforms = [
+        { key: 'tiktok', name: '🎵 TikTok', services: ['like', 'comment', 'follower', 'share', 'view'] },
+        { key: 'facebook', name: '📘 Facebook', services: ['like', 'comment', 'follower', 'share', 'view'] },
+        { key: 'youtube', name: '📺 YouTube', services: ['like', 'comment', 'subscriber', 'view'] },
+        { key: 'telegram', name: '📢 Telegram', services: ['subscriber', 'member'] }
+      ];
+      
+      const serviceLabels = {
+        like: '👍 Like', comment: '💬 Comment', follower: '👥 Follower',
+        share: '🔗 Share', view: '👁️ View', subscriber: '🔔 Subscribe', member: '👥 Member'
+      };
+      
+      let html = '';
+      platforms.forEach(p => {
+        html += `
+          <div style="background:linear-gradient(145deg,#fafbff,#f0f2ff);padding:15px;border-radius:12px;border:2px solid #e8eaff;margin-bottom:14px;">
+            <div style="font-weight:900;color:#6C5CE7;font-size:1rem;margin-bottom:12px;">${p.name}</div>`;
+        
+        p.services.forEach(s => {
+          const data = (currentPromoPrices[p.key] && currentPromoPrices[p.key][s]) || { amount: 50, quantity: 100 };
+          html += `
+            <div style="background:#fff;padding:12px;border-radius:10px;margin-bottom:10px;border:1px solid #eee;">
+              <div style="font-weight:800;font-size:.85rem;color:#333;margin-bottom:8px;">${serviceLabels[s]}</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                <div class="form-group" style="margin-bottom:0;">
+                  <label style="font-size:.68rem;color:#888;">💵 Amount (TK)</label>
+                  <input type="number" step="1" id="pp_amt_${p.key}_${s}" value="${data.amount || 50}" style="padding:8px;font-size:.85rem;">
+                </div>
+                <div class="form-group" style="margin-bottom:0;">
+                  <label style="font-size:.68rem;color:#888;">🔢 Quantity</label>
+                  <input type="number" step="1" id="pp_qty_${p.key}_${s}" value="${data.quantity || 100}" style="padding:8px;font-size:.85rem;">
+                </div>
+              </div>
+              <div style="font-size:.7rem;color:#6C5CE7;font-weight:700;margin-top:6px;text-align:center;">
+                → <span id="preview_${p.key}_${s}">${data.amount || 50} TK = ${data.quantity || 100}</span>
+              </div>
+            </div>`;
+        });
+        
+        html += `</div>`;
+      });
+      
+      container.innerHTML = html;
+      
+      platforms.forEach(p => {
+        p.services.forEach(s => {
+          const amtEl = document.getElementById(`pp_amt_${p.key}_${s}`);
+          const qtyEl = document.getElementById(`pp_qty_${p.key}_${s}`);
+          const previewEl = document.getElementById(`preview_${p.key}_${s}`);
+          
+          if(amtEl && qtyEl && previewEl){
+            const update = () => {
+              previewEl.innerText = `${amtEl.value} TK = ${qtyEl.value}`;
+            };
+            amtEl.addEventListener('input', update);
+            qtyEl.addEventListener('input', update);
+          }
+        });
+      });
+    }
+
+    function savePromoPrices(){
+      const platforms = ['tiktok', 'facebook', 'youtube', 'telegram'];
+      const services = {
+        tiktok: ['like', 'comment', 'follower', 'share', 'view'],
+        facebook: ['like', 'comment', 'follower', 'share', 'view'],
+        youtube: ['like', 'comment', 'subscriber', 'view'],
+        telegram: ['subscriber', 'member']
+      };
+      
+      let prices = {};
+      platforms.forEach(p => {
+        prices[p] = {};
+        services[p].forEach(s => {
+          const amtEl = document.getElementById(`pp_amt_${p.key}_${s}`);
+          const qtyEl = document.getElementById(`pp_qty_${p.key}_${s}`);
+          if(amtEl && qtyEl){
+            prices[p][s] = {
+              amount: Number(amtEl.value) || 50,
+              quantity: Number(qtyEl.value) || 100
+            };
+          }
+        });
+      });
+      
+      db.ref('config/promoPrices').set(prices).then(() => toast('✅ Prices saved!'));
+    }
+
+    function loadPromotions(){
+      db.ref('promotions').on('value', snap => {
+        allPromotions = [];
+        if(snap.exists()){
+          snap.forEach(child => {
+            const p = child.val();
+            p.key = child.key;
+            allPromotions.push(p);
+          });
+        }
+        renderPromoList();
+      });
+    }
+
+    function filterPromo(status){
+      currentPromoFilter = status;
+      ['pending','in_progress','completed','rejected','all'].forEach(s => {
+        const btn = document.getElementById('promoF_' + s);
+        if(btn) btn.classList.toggle('active', s === status);
+      });
+      renderPromoList();
+    }
+
+    function renderPromoList(){
+      const container = document.getElementById('promoContainer');
+      if(!container) return;
+      
+      let filtered = allPromotions;
+      if(currentPromoFilter !== 'all') filtered = filtered.filter(p => p.status === currentPromoFilter);
+      filtered.sort((a,b) => (b.timestamp || 0) - (a.timestamp || 0));
+      
+      document.getElementById('promoCount').innerText = filtered.length;
+      
+      if(filtered.length === 0){
+        container.innerHTML = '<div class="empty"><i class="fas fa-bullhorn"></i>No requests</div>';
+        return;
+      }
+      
+      let html = '';
+      filtered.forEach(p => {
+        const date = new Date(p.timestamp).toLocaleString();
+        const serviceName = SERVICE_NAMES[p.service] || p.service;
+        
+        let statusColor = '#ff9f43';
+        let statusText = '⏳ PENDING';
+        if(p.status === 'in_progress'){ statusColor = '#0984e3'; statusText = '🔄 IN PROGRESS'; }
+        else if(p.status === 'completed'){ statusColor = '#00b894'; statusText = '✅ COMPLETED'; }
+        else if(p.status === 'rejected'){ statusColor = '#ff4757'; statusText = '❌ REJECTED'; }
+        
+        html += `
+          <div class="wd-card">
+            <div class="wd-head">
+              <span style="color:#0984e3;background:rgba(9,132,227,.1);padding:4px 12px;border-radius:8px;font-size:.8rem;">${p.method}</span>
+              <span style="color:#6C5CE7;font-size:1.2rem;font-weight:900;">${p.amount} TK</span>
+            </div>
+            
+            <div style="margin-bottom:10px;">
+              <span style="background:${statusColor}22;color:${statusColor};padding:3px 10px;border-radius:6px;font-size:.75rem;font-weight:800;">${statusText}</span>
+            </div>
+            
+            <div class="wd-info">
+              <b>👤 User:</b> ${p.userName || 'User'}<br>
+              <b>🆔 ID:</b> <code>${p.userId}</code><br>
+              <b>📱 Service:</b> <b style="color:#6C5CE7;">${serviceName}</b><br>
+              <b>🔢 Quantity:</b> ${p.quantity}<br>
+              <b>🔗 Link:</b> <a href="${p.link}" target="_blank" style="color:#0984e3;">${(p.link||'').substring(0,35)}...</a><br>
+              <b>💳 Trx:</b> <span style="color:#00b894;font-weight:800;">${p.transactionId}</span><br>
+              <b>📱 Sender:</b> <span style="color:#d63031;font-weight:800;">${p.senderNumber}</span><br>
+              ${p.note ? `<b>📝 Note:</b> ${p.note}<br>` : ''}
+              <small style="color:#999;">📅 ${date}</small>
+            </div>
+            
+            <div class="wd-actions">
+              ${p.status === 'pending' ? `
+                <button class="btn btn-blue btn-small" style="flex:1;" onclick="updatePromoStatus('${p.key}', 'in_progress')"><i class="fas fa-play"></i> Start</button>
+                <button class="btn btn-red btn-small" style="flex:1;" onclick="rejectPromo('${p.key}')"><i class="fas fa-times"></i> Reject</button>
+              ` : ''}
+              ${p.status === 'in_progress' ? `
+                <button class="btn btn-green btn-small" style="flex:1;" onclick="updatePromoStatus('${p.key}', 'completed')"><i class="fas fa-check"></i> Complete</button>
+              ` : ''}
+            </div>
+          </div>`;
+      });
+      
+      container.innerHTML = html;
+    }
+
+    function updatePromoStatus(key, status){
+      if(!confirm(`Change status to "${status}"?`)) return;
+      db.ref('promotions/' + key).update({ status: status, updatedAt: Date.now() })
+        .then(() => toast('✅ Updated!'));
+    }
+
+    function rejectPromo(key){
+      if(!confirm('Reject this request?')) return;
+      db.ref('promotions/' + key).update({ status: 'rejected', rejectedAt: Date.now() })
+        .then(() => toast('❌ Rejected!'));
+    }
+
+    // ========== USERS ==========
+    function loadUsers(){
+      db.ref('users').on('value', snap => {
+        allUsers = [];
+        if(snap.exists()){
+          snap.forEach(child => {
+            let u = child.val(); u._key = child.key; allUsers.push(u);
+          });
+          allUsers.sort((a,b) => (b.balance||0) - (a.balance||0));
+        }
+        document.getElementById('userCount').innerText = allUsers.length;
+        document.getElementById('totalUsers2').innerText = allUsers.length;
+        filterUsers();
+      });
+    }
+
+    function filterUserType(type){
+      currentUserFilter = type;
+      ['fAll','fVerified','fUnverified','fActive','fRich'].forEach(id => {
+        const btn = document.getElementById(id);
+        if(btn) btn.style.opacity = '0.5';
+      });
+      const activeBtn = { 'all': 'fAll', 'verified': 'fVerified', 'unverified': 'fUnverified', 'active': 'fActive', 'rich': 'fRich' }[type];
+      if(document.getElementById(activeBtn)) document.getElementById(activeBtn).style.opacity = '1';
+      filterUsers();
+    }
+
+    function filterUsers(){
+      const q = (document.getElementById('userSearch').value || '').toLowerCase().trim();
+      const today = new Date().toISOString().slice(0, 10);
+      
+      let filtered = allUsers.filter(u => {
+        if(q && !(u.name||'').toLowerCase().includes(q) && !String(u.id||'').includes(q)) return false;
+        if(currentUserFilter === 'verified' && u.verified !== true) return false;
+        if(currentUserFilter === 'unverified' && u.verified === true) return false;
+        if(currentUserFilter === 'active' && u.lastActive !== today) return false;
+        if(currentUserFilter === 'rich' && (u.balance || 0) < 10) return false;
+        return true;
+      });
+      
+      if(currentUserFilter === 'rich') filtered.sort((a,b) => (b.balance || 0) - (a.balance || 0));
+      
+      document.getElementById('shownCount').innerText = filtered.length;
+      renderUsersAdvanced(filtered);
+    }
+
+    function renderUsersAdvanced(users){
+      let html = '';
+      const sym = configData.currencySymbol || 'TK';
+      const today = new Date().toISOString().slice(0, 10);
+      const totalRefReq = (Number(configData.firstReferralReq || 20) + Number(configData.secondReferralReq || 10));
+      
+      if(users.length === 0){
+        html = '<div class="empty"><i class="fas fa-users"></i>No users.</div>';
+      } else {
+        users.forEach(u => {
+          const isActiveToday = u.lastActive === today;
+          const vBadge = u.verified 
+            ? '<span style="background:rgba(0,184,148,.15);color:#00b894;padding:2px 8px;border-radius:6px;font-size:.65rem;font-weight:800;">✅ VERIFIED</span>' 
+            : '<span style="background:rgba(255,71,87,.15);color:#ff4757;padding:2px 8px;border-radius:6px;font-size:.65rem;font-weight:800;">❌ UNVERIFIED</span>';
+          const activeBadge = isActiveToday ? '<span style="background:rgba(255,159,67,.15);color:#ff9f43;padding:2px 6px;border-radius:5px;font-size:.6rem;font-weight:800;">🔥 TODAY</span>' : '';
+          const refs = u.referrals || 0;
+          const adCount = u.dailyAds ? Object.values(u.dailyAds).reduce((a,b) => a+b, 0) : 0;
+          const quizCorrect = u.quizCorrectCount || 0;
+          
+          html += `
+          <div style="border:1px solid #eee;padding:12px;border-radius:12px;margin-bottom:10px;background:#fff;">
+            <div style="display:flex;justify-content:space-between;margin-bottom:10px;">
+              <div style="display:flex;align-items:center;gap:10px;">
+                <img src="${u.photo || 'https://via.placeholder.com/45'}" style="width:45px;height:45px;border-radius:50%;">
+                <div>
+                  <div style="font-weight:800;font-size:.9rem;">${u.name || 'User'} ${activeBadge}</div>
+                  <div style="font-size:.7rem;color:#888;">ID: ${u.id}</div>
+                  <div style="margin-top:4px;">${vBadge}</div>
+                </div>
+              </div>
+              <div style="text-align:right;">
+                <div style="font-size:1.15rem;font-weight:900;color:#6C5CE7;">${Number(u.balance||0).toFixed(2)}</div>
+                <div style="font-size:.65rem;color:#888;">${sym}</div>
+              </div>
+            </div>
+            
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:10px;">
+              <div style="background:#f0f3f8;padding:8px;border-radius:8px;text-align:center;">
+                <div style="font-size:.95rem;font-weight:900;color:${refs >= totalRefReq ? '#00b894' : '#6C5CE7'};">${refs}${refs >= totalRefReq ? ' ✅' : ''}</div>
+                <div style="font-size:.6rem;color:#888;font-weight:700;">Refs</div>
+              </div>
+              <div style="background:#f0f3f8;padding:8px;border-radius:8px;text-align:center;">
+                <div style="font-size:.95rem;font-weight:900;color:#00b894;">${adCount}</div>
+                <div style="font-size:.6rem;color:#888;font-weight:700;">Ads</div>
+              </div>
+              <div style="background:#f0f3f8;padding:8px;border-radius:8px;text-align:center;">
+                <div style="font-size:.95rem;font-weight:900;color:#ff9f43;">${quizCorrect}</div>
+                <div style="font-size:.6rem;color:#888;font-weight:700;">Quiz</div>
+              </div>
+            </div>
+            
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+              <button class="btn btn-green btn-small" style="flex:1;min-width:70px;" onclick="manualWithdrawForUser('${u.id}')"><i class="fas fa-hand-holding-usd"></i> Withdraw</button>
+              <button class="btn btn-blue btn-small" style="flex:1;min-width:70px;" onclick="addBalance('${u.id}', '${(u.name || 'User').replace(/'/g, "\\'")}')"><i class="fas fa-plus"></i> Add</button>
+              <button class="btn btn-orange btn-small" style="flex:1;min-width:70px;" onclick="viewUserDetails('${u.id}')"><i class="fas fa-eye"></i> Info</button>
+            </div>
+          </div>`;
+        });
+      }
+      document.getElementById('usersList').innerHTML = html;
+    }
+
+    function viewUserDetails(userId){
+      const u = allUsers.find(x => String(x.id) === String(userId));
+      if(!u) return toast('User not found');
+      
+      const sym = configData.currencySymbol || 'TK';
+      const totalRefReq = (Number(configData.firstReferralReq || 20) + Number(configData.secondReferralReq || 10));
+      const adCount = u.dailyAds ? Object.values(u.dailyAds).reduce((a,b) => a+b, 0) : 0;
+      
+      let details = `
+━━━━━━━━━━━━━━━━━━━━━━
+👤 USER DETAILS
+━━━━━━━━━━━━━━━━━━━━━━
+🆔 ID: ${u.id}
+📛 Name: ${u.name || 'User'}
+💰 Balance: ${Number(u.balance || 0).toFixed(2)} ${sym}
+💵 Total Earned: ${Number(u.totalEarned || 0).toFixed(2)} ${sym}
+👥 Referrals: ${u.referrals || 0} / ${totalRefReq}
+✅ Verified: ${u.verified ? 'YES' : 'NO'}
+🎯 Quiz Correct: ${u.quizCorrectCount || 0}
+📱 Ads Watched: ${adCount}
+📅 Last Active: ${u.lastActive || 'N/A'}
+━━━━━━━━━━━━━━━━━━━━━━
+
+Options:
+1. Add Balance
+2. Remove Balance
+3. Manual Verify
+4. Delete User
+5. Cancel
+
+Enter number (1-5):
+`;
+      
+      const choice = prompt(details);
+      if(choice === '1') addBalance(userId, u.name);
+      else if(choice === '2') removeBalance(userId, u.name);
+      else if(choice === '3') manualVerify(userId);
+      else if(choice === '4') deleteUser(userId);
+    }
+
+    function manualWithdrawForUser(userId){
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      document.querySelectorAll('.tab')[8].classList.add('active');
+      document.getElementById('tab-manual').classList.add('active');
+      setTimeout(() => { selectManualUser(userId); }, 200);
+    }
+
+    function addBalance(userId, userName){
+      const amt = prompt(`Add balance to "${userName}":`);
+      if(!amt || isNaN(amt) || Number(amt) <= 0) return;
+      
+      const user = allUsers.find(x => String(x.id) === String(userId));
+      if(!user) return;
+      
+      db.ref('users/' + userId).update({ 
+        balance: Number(user.balance || 0) + Number(amt),
+        totalEarned: Number(user.totalEarned || 0) + Number(amt)
+      }).then(() => toast(`✅ Added ${amt} TK`));
+    }
+
+    function removeBalance(userId, userName){
+      const amt = prompt(`Remove balance from "${userName}":`);
+      if(!amt || isNaN(amt) || Number(amt) <= 0) return;
+      
+      const user = allUsers.find(x => String(x.id) === String(userId));
+      if(!user) return;
+      
+      db.ref('users/' + userId).update({ 
+        balance: Math.max(0, Number(user.balance || 0) - Number(amt))
+      }).then(() => toast(`✅ Removed ${amt} TK`));
+    }
+
+    function manualVerify(userId){
+      if(confirm('Verify this user?'))
+        db.ref('users/' + userId).update({ verified: true, verifiedAt: Date.now() }).then(() => toast('✅ Verified!'));
+    }
+
+    function deleteUser(userId){
+      if(!confirm('⚠️ Delete this user permanently?')) return;
+      if(!confirm('Are you ABSOLUTELY sure?')) return;
+      db.ref('users/' + userId).remove().then(() => toast('🗑️ User deleted'));
+    }
+
+    function loadStats(){
+      db.ref('users').once('value').then(s => {
+        let total = 0, verified = 0;
+        s.forEach(c => { total++; if(c.val().verified) verified++; });
+        document.getElementById('statUsers').innerText = total;
+        document.getElementById('statVerified').innerText = verified;
+      });
+      db.ref('withdrawals').once('value').then(s => {
+        let pending = 0;
+        s.forEach(c => { if(c.val().status === 'pending' && !c.val().isAdmin) pending++; });
+        document.getElementById('statPending').innerText = pending;
+      });
+    }
+  </script>
+</body>
+</html>
